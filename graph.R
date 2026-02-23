@@ -1,6 +1,6 @@
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(plotly, tidyverse, akima, kableExtra,
-               stringr, data.table, splines, betareg, stringdist, gridExtra, highcharter, stargazer)
+pacman::p_load(tidyverse,
+               stringr, data.table, stringdist, gridExtra)
 
 couleurs = c("LEXG" = "#bb0000",
              "LCOM" = "#dd0000",
