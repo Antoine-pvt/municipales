@@ -145,8 +145,10 @@ plot_fusion = function(ville = "Belley", nom_liste = "", departement = "", lab =
                   aes(slope = score, color = liste, intercept = 0), 
                   linetype = "dashed", show.legend = T)
   }
-  
   plot
-  return(plot)
+  return(list("graph" = plot, "data" = data_long %>%
+                rename("Nb sieges sur la fusion (xaxis)" = nb_sieges,
+                       "Nb sieges obtenus (yaxis)" = value,
+                       "Couleur" = col)))
 }
 
