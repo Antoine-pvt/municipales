@@ -40,10 +40,12 @@ df_resultats = readRDS(file = "resultats.rds")
 # show_boxes -> TRUE si on veut numéroter les sièges en bas
 # n_legend : nombre de lignes de la légende
 # distribution : FALSE si on veut représenter juste le transparent
+# zone_impossible : TRUE si on grise la zone de répartition impossible
 plot_fusion = function(ville = "Belley", distribution = T,show_boxes = F,
                        # legend_order = NULL,
                        nom_liste = "", departement = "", lab = T, col = "",
-                       legend = "", n_legend = 1){
+                       legend = "", n_legend = 1,
+                       zone_impossible = T){
   # On filtre les données
   liste_villes = unique(df_resultats$commune)
   ville = liste_villes[amatch(str_to_lower(ville), str_to_lower(liste_villes), maxDist = Inf)]  # Fuzzy match pour les fautes sur les villes
@@ -59,6 +61,8 @@ plot_fusion = function(ville = "Belley", distribution = T,show_boxes = F,
   df = df %>% 
     filter(fusion == 1) %>%
     filter(nb_tours_present == 2)
+  
+  nb_candidats_t2 = unique(df$nb_candidats_t2)
   
   if(nrow(df) < 2){stop("Pas de fusion dans cette ville")}
   
@@ -148,7 +152,8 @@ plot_fusion = function(ville = "Belley", distribution = T,show_boxes = F,
     left_join(scores %>% select(liste, nuance, col)) %>%
     rename(column = liste,
            nb_sieges = iteration)
-  if (!length(unique(data_long$col)) == length(unique(data_long$column))){
+ 
+   if (!length(unique(data_long$col)) == length(unique(data_long$column))){
     library(scales)
     
     cols_default <- hue_pal()(length(unique(data_long$column)))
@@ -277,6 +282,7 @@ plot_fusion = function(ville = "Belley", distribution = T,show_boxes = F,
     arrange(desc(score)) %>%
     pull(liste)
   
+  max_sieges = max(data_long$nb_sieges)
   data_long$column <- factor(data_long$column, levels = legend_order)
   rectangles$column <- factor(rectangles$column, levels = legend_order)
   
@@ -359,7 +365,7 @@ plot_fusion = function(ville = "Belley", distribution = T,show_boxes = F,
       legend.title = element_blank(),
       axis.title = element_text(size = 16),
       axis.text  = element_text(size = 14),
-      legend.text = element_text(size = 12),
+      legend.text = element_text(size = 14),
       legend.position = "bottom"
     ) +
     guides(
@@ -369,6 +375,21 @@ plot_fusion = function(ville = "Belley", distribution = T,show_boxes = F,
     scale_color_manual(values = cols, breaks = legend_order) +
     scale_fill_manual(values = cols, breaks = legend_order)
  
+  if (zone_impossible){
+    lower <- ceiling(0.5 * ceiling(0.5 * max_sieges))
+    upper <- ceiling(ceiling(0.5 * max_sieges) + max_sieges / (2 * first(nb_candidats_t2)))
+    
+    plot = plot +
+      annotate("rect",
+               xmin = lower - 0.3,
+               xmax = upper + 0.3,
+               ymin = -Inf,
+               ymax = Inf,
+               fill = "#737373",
+               alpha = 0.2) +
+      geom_line()   
+      
+  }
     
     
   # # On ajoute les lignes pointillées
@@ -397,11 +418,37 @@ plot_fusion = function(ville = "Belley", distribution = T,show_boxes = F,
 plot_fusion("Reims") 
 # 2/ Pour personnaliser les couleurs et le nom des listes
 plot_fusion("Reims",
-            col = c("POUR REIMS UNE NOUVELLE ÈRE AVEC ANNE-SOPHIE FRIGOUT" = "#0D378A",
-                    "LES RÉMOIS AU COEUR - Liste d'Union de la Droite, du Centre et des Indépendants" = "#0066cc"
+            col = c("POUR REIMS UNE NOUVELLE ÈRE AVEC ANNE-SOPHIE FRIGOUT" = "#404040",
+                    "LES RÉMOIS AU COEUR - Liste d'Union de la Droite, du Centre et des Indépendants" = "#ADC1FD"
                     ),
-            legend = c("POUR REIMS UNE NOUVELLE ÈRE AVEC ANNE-SOPHIE FRIGOUT" = "Pour Reims (RN)",
-                       "LES RÉMOIS AU COEUR - Liste d'Union de la Droite, du Centre et des Indépendants" = "Les Rémois au coeur (LR)"
+            legend = c("POUR REIMS UNE NOUVELLE ÈRE AVEC ANNE-SOPHIE FRIGOUT" = "Frigout (RN)",
+                       "LES RÉMOIS AU COEUR - Liste d'Union de la Droite, du Centre et des Indépendants" = "Lang (DVD)"
                        )
 )
 
+
+plot_fusion("Bagnolet",
+            col = c("BAGNOLET FIERE ET SOLIDAIRE" = "#dd0000",
+                    "Réussir ensemble." = "#cc6666"),
+            legend = c("BAGNOLET FIERE ET SOLIDAIRE" = "Di Martino (UG)",
+                    "Réussir ensemble." = "Vionnet (DVG)"))
+
+plot_fusion("Lille") 
+plot_fusion("Lille",
+            col = c("Lille Demain avec Stéphane Baly" = "#00C000",
+                    "TOUT POUR LILLE" = "#CC6666"
+            ),
+            legend = c("Lille Demain avec Stéphane Baly" = "Baly (ECO)",
+                    "TOUT POUR LILLE" = "Deslandes (DVG)"
+            ),
+)
+
+plot_fusion("Paris") 
+plot_fusion("Paris",
+            col = c("PARIS APAISÉ AVEC PIERRE-YVES BOURNAZEL" = "#66CCFF",
+                    "CHANGER PARIS AVEC RACHIDA DATI" = "#0066CC"
+            ),
+            legend = c("PARIS APAISÉ AVEC PIERRE-YVES BOURNAZEL" = "Bournazel (Horizons)",
+                    "CHANGER PARIS AVEC RACHIDA DATI" = "Dati (LR)"
+            )
+)
